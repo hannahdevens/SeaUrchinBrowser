@@ -3,18 +3,27 @@ library(ggplot2)
 library(dplyr)
 library(GenomicFeatures)
 library(shinyWidgets)
+library(rtracklayer)
+library(Gviz)
 
 setwd("/Users/hrd11/Desktop/Wray_Lab/Shiny_seaurchinbrowser")
 
+options(ucscChromosomeNames = F)
+heryATACtrack <- import.bw("HeL_chr1.bw",
+                           as="GRanges") 
+#For gene models:
+ensembleGTF <- "Hery.braker.pasa.gtf"
+txdbFromGFF <- makeTxDbFromGFF(file = ensembleGTF) 
+customFromTxDb <- GeneRegionTrack(txdbFromGFF) 
 
-# Define UI for app that draws a histogram ----
+# Define UI ----
 ui <- fluidPage(
   titlePanel("Genome Coordinates"),
   sidebarLayout(
     sidebarPanel(
       numericInput("chromosome", "Chromosome:", 1, min=1, max=21),
-      numericInput("start", "Start Position:", min(herytrack$start)),
-      numericInput("end", "End Position:", max(herytrack$end)),
+      numericInput("start", "Start Position:", min(heryATACtrack$start)),
+      numericInput("end", "End Position:", max(heryATACtrack$end)),
       actionButton("submit", "Submit"),
       #Widget to choose which stages to show ATAC tracks for:
       checkboxGroupInput("radio", h3("Stage(s)"),
@@ -31,30 +40,11 @@ ui <- fluidPage(
 
 
 
-# Define server logic required to draw a histogram ----
+# Define server logic ----
 server <- function(input, output) {
-  #For ATAC track:
-  #herytrack <- read.csv("testherytrack.csv",header=T,fill=T)
-  
-  #filtered_herytrack <- reactive({
-  #herytrack %>% 
-  #filter(chr==input$chromosome,
-  #start >= input$start,
-  #end <= input$end)
-  #})
-  
-  
-  heryATACtrack <- import.bw("HeL_chr1.bw",
-                             as="GRanges") 
   
   chromosome_rename <- reactive({paste0("chr",input$chromosome)})
   accDT <- DataTrack(heryATACtrack,chomosome=chromosome_rename, name="Accessibility")
-  
-  
-  #For gene models:
-  ensembleGTF <- "Hery.braker.pasa.gtf"
-  txdbFromGFF <- makeTxDbFromGFF(file = ensembleGTF) 
-  customFromTxDb <- GeneRegionTrack(txdbFromGFF) 
   
   #Plot peaks in the area:
   output$plot1 <- renderPlot({
